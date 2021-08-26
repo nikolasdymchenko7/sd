@@ -1,3 +1,5 @@
+package mail;
+
 import groovy.beans.PropertyReader;
 
 import java.io.IOException;

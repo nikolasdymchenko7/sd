@@ -11,7 +11,7 @@ import java.util.List;
 
 import static io.restassured.RestAssured.*;
 
-public class JavaMain {
+public class Main {
     public static void main(String[] args) throws IOException {
         String getURL = "https://tickets.dev.flcn.pro/login";
         Auth auth = new Auth();

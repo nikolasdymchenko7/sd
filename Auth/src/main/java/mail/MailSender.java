@@ -1,6 +1,7 @@
 package mail;
 
 import groovy.beans.PropertyReader;
+import org.jsoup.nodes.Document;
 
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
@@ -13,40 +14,37 @@ import javax.mail.internet.MimeMultipart;
 import java.io.IOException;
 import java.util.Properties;
 
-public class JavaMainSendEmail {
+public class MailSender extends HTMLParse {
+    private Properties properties;
+    private Session mailSession;
+    private MimeMessage message;
 
-    public static void main(String[] args) throws IOException, MessagingException {
-        final Properties properties = new Properties();
-        properties.load(PropertyReader.class.getClassLoader().getResourceAsStream("config.properties"));
-        Session mailSession = Session.getDefaultInstance(properties);
-        MimeMessage message = getMimeMessageWithoutAttach(properties, mailSession);
-        MimeMessage messageWithAttach = getMimeMessageWithAttach(properties, mailSession);
-        MimeMessage messageInlineImage = getMimeMessageWithInlineImage(properties, mailSession);
+    public MailSender(){}
 
-        //sendEmail(mailSession, message);
-        //sendEmail(mailSession, messageWithAttach);
-
-        sendEmail(mailSession, messageInlineImage);
+    public MailSender(Properties properties,
+                      Session mailSession){
+        this.properties = properties;
+        this.mailSession = mailSession;
     }
 
-    private static void sendEmail(Session mailSession, MimeMessage message) throws MessagingException {
+    public void mailClient(MimeMessage message) throws MessagingException {
         Transport transport = mailSession.getTransport();
         transport.connect(null, "testusersmcompany123");
         transport.sendMessage(message, message.getAllRecipients());
         transport.close();
     }
 
-    private static MimeMessage getMimeMessageWithoutAttach(Properties properties, Session mailSession) throws MessagingException {
-        MimeMessage message = new MimeMessage(mailSession);
+    public MimeMessage sendMessageWithoutAttach() throws MessagingException {
+        message = getMessage(mailSession);
         message.setFrom(new InternetAddress(properties.getProperty("mail.smtps.user")));
         message.setRecipient(Message.RecipientType.TO, new InternetAddress("smcompanytest@gmail.com"));
-        message.setSubject("Fetching 11/08/2021");
+        message.setSubject("Fetching 25/08/2021");
         message.setText("Hi, it's test message. 4:39 pm");
         return message;
     }
-    private static MimeMessage getMimeMessageWithAttach(Properties properties, Session mailSession) throws MessagingException, IOException {
+    public MimeMessage sendMessageWithAttach() throws MessagingException, IOException {
 
-        MimeMessage message = new MimeMessage(mailSession);
+        message = getMessage(mailSession);
 
         message.setFrom(new InternetAddress(properties.getProperty("mail.smtps.user")));
         message.setRecipient(Message.RecipientType.TO, new InternetAddress("smcompanytest@gmail.com"));
@@ -67,35 +65,62 @@ public class JavaMainSendEmail {
 
         return message;
     }
-    public static MimeMessage getMimeMessageWithInlineImage(Properties properties, Session mailSession) throws MessagingException, IOException {
-        MimeMessage message = new MimeMessage(mailSession);
+
+    public MimeMessage sendMessageWithInlineImage() throws MessagingException, IOException {
+        message = getMessage(mailSession);
+
         message.setFrom(new InternetAddress(properties.getProperty("mail.smtps.user")));
         message.setRecipient(Message.RecipientType.TO, new InternetAddress("smcompanytest@gmail.com"));
-        message.setSubject("Fetching - inline image 3");
+        message.setSubject("Fetching - inline image 7");
 
         MimeMultipart multipart = new MimeMultipart("related");
 
         BodyPart messageBodyPart = new MimeBodyPart();
 
-//        String htmlText = "<h1>Inline image</h1><img src=\"cid:image\">";
-//        messageBodyPart.setContent(htmlText, "text/html");
-        String htmlMessage = "<html>Hi there,<br>";
-        htmlMessage += "See this cool pic: <img src=\"cid:test\" />";
-        htmlMessage += "</html>";
+        Document html = getHtmlPage(properties);
 
-        messageBodyPart.setContent(htmlMessage, "text/html");
+        messageBodyPart.setContent(html.toString(), "text/html");
         messageBodyPart = new MimeBodyPart();
 
         DataSource fds = new FileDataSource(
                 properties.getProperty("path"));
 
         messageBodyPart.setDataHandler(new DataHandler(fds));
-        messageBodyPart.setHeader("Content-ID", "<image>");
+        messageBodyPart.setHeader("Content-ID", "test");
+        messageBodyPart.setHeader("Content-Type", "image/png");
 
         multipart.addBodyPart(messageBodyPart);
 
         message.setContent(multipart);
 
         return message;
+    }
+    //Properties
+    private MimeMessage getMessage(Session mailSession) {
+        return new MimeMessage(mailSession);
+    }
+
+    public Properties getProperties() {
+        return properties;
+    }
+
+    public void setProperties(Properties properties) {
+        this.properties = properties;
+    }
+
+    public Session getMailSession() {
+        return mailSession;
+    }
+
+    public void setMailSession(Session mailSession) {
+        this.mailSession = mailSession;
+    }
+
+    public MimeMessage getMessage() {
+        return message;
+    }
+
+    public void setMessage(MimeMessage message) {
+        this.message = message;
     }
 }
